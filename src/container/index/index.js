@@ -1,92 +1,131 @@
-import {
-  createElement,
-  createHeader,
-} from '../../script/layout'
+export class ToDo {
+  static #NAME = 'toDo'
 
-const page = document.querySelector('.page')
-
-const header = createHeader()
-
-page.append(header)
-
-const title = createElement('h1', 'title', 'Мій блог')
-
-page.append(title)
-
-const POST_LIST = [
-  {
-    category: [
-      { text: 'Важливо', id: 1 },
-      { text: 'Нова', id: 2 },
-    ],
-    info: 'До біса планувальник, наймаємо дизайнера і готуємося до презентації, як Джобс',
-    date: '25.01',
-    viewed: false,
-  },
-  {
-    category: [{ text: 'Нова', id: 2 }],
-    info: 'Ми хотіли щоб у цьому чаті було близько 150 людей щоб зробити якісний пак самопрезентацій.',
-    date: '24.01',
-    viewed: true,
-  },
-]
-const createPost = () => {
-  const postList = createElement('main', 'post__list')
-
-  POST_LIST.forEach((postData) => {
-    const post = createElement(
-      'div',
-      postData.viewed
-        ? 'post button post--viewed'
-        : 'post button',
+  static #saveData = () => {
+    localStorage.setItem(
+      this.#NAME,
+      JSON.stringify({
+        list: this.#list,
+        count: this.#count,
+      }),
     )
+  }
 
-    const postHeader = createElement('div', 'post__header')
+  static #loadData = () => {
+    const data = localStorage.getItem(this.#NAME)
 
-    //   ===
+    if (data) {
+      const { list, count } = JSON.parse(data)
+      this.#list = list
+      this.#count = count
+    }
+  }
 
-    const categoryList = createElement(
-      'div',
-      'post__category-list',
-    )
+  static #list = []
+  static #count = 0
 
-    postData.category.forEach((category) => {
-      const categorySpan = createElement(
-        'span',
-        `post__category post__category--${category.id}`,
-        category.text,
-      )
-      categoryList.append(categorySpan)
+  static #createTaskData = (text) => {
+    this.#list.push({
+      id: ++this.#count,
+      text,
+      done: false,
     })
+  }
 
-    //   ===
+  static #block = null
+  static #template = null
+  static #input = null
+  static #button = null
 
-    const dateSpan = createElement(
-      'span',
-      'post__date',
-      postData.date,
-    )
+  static init = () => {
+    this.#template =
+      document.getElementById(
+        'task',
+      ).content.firstElementChild
 
-    //   ===
+    this.#block = document.querySelector('.task__list')
+    this.#input = document.querySelector('.form__input')
+    this.#button = document.querySelector('.form__button')
+    this.#button.onclick = this.#handleAdd
+    this.#loadData
+    this.#render()
+  }
+  static #handleAdd = () => {
+    this.#createTaskData(this.#input.value)
+    this.#input.value = ''
+    this.#render()
+    this.#saveData()
+  }
 
-    postHeader.append(categoryList, dateSpan)
+  static #render = () => {
+    this.#block.innerHTML = ''
+    if (this.#list.length === 0) {
+      this.#block.innerText = 'Список задач пустий'
+    } else {
+      this.#list.forEach((taskData) => {
+        const el = this.#createTaskElem(taskData)
+        this.#block.append(el)
+      })
+    }
+  }
+  static #createTaskElem = (data) => {
+    const el = this.#template.cloneNode(true)
 
-    //   ===
+    const [id, text, btnDo, btnCancel] = el.children
 
-    const infoParagraph = createElement(
-      'p',
-      'post__info',
-      postData.info,
-    )
-    post.append(postHeader, infoParagraph)
+    id.innerText = `${data.id}.`
+    text.innerText = data.text
+    btnCancel.onclick = this.#handleCancel(data)
+    btnDo.onclick = this.#handleDo(data, btnDo, el)
 
-    //   ===
+    if (data.done) {
+      el.classList.add('task--done')
+      btnDo.classList.remove('task__button--do')
+      btnDo.classList.add('task__button--done')
+    }
 
-    postList.append(post)
-  })
+    return el
+  }
 
-  return postList
+  static #handleDo = (data, btn, el) => () => {
+    const result = this.#toggleDone(data.id)
+
+    if (result === true || result === false) {
+      el.classList.toggle('task--done')
+      btn.classList.toggle('task__button--do')
+      btn.classList.toggle('task__button--done')
+
+      this.#saveData()
+    }
+  }
+
+  static #toggleDone = (id) => () => {
+    const task = this.#list.find((item) => item.id === id)
+
+    if (task) {
+      task.done = !task.done
+      return task.done
+    } else {
+      return null
+    }
+  }
+
+  static #handleCancel = (data) => () => {
+    if (confirm('Видалити задачу?')) {
+      const result = this.#deleteById(data.id)
+      if (result) {
+        this.#render()
+        this.#saveData()
+      }
+    }
+  }
+
+  static #deleteById = (id) => {
+    this.#list = this.#list.filter((item) => item.id !== id)
+    return true
+  }
 }
 
-const post = createPost()
-page.append(post)
+ToDo.init()
+
+window.todo = ToDo
