@@ -1,5 +1,5 @@
-export class ToDo {
-  static #NAME = 'toDo'
+export class Todo {
+  static #NAME = 'todo'
 
   static #saveData = () => {
     localStorage.setItem(
@@ -44,23 +44,33 @@ export class ToDo {
       ).content.firstElementChild
 
     this.#block = document.querySelector('.task__list')
+
     this.#input = document.querySelector('.form__input')
+
     this.#button = document.querySelector('.form__button')
+
     this.#button.onclick = this.#handleAdd
-    this.#loadData
+
+    this.#loadData()
+
     this.#render()
   }
+
   static #handleAdd = () => {
-    this.#createTaskData(this.#input.value)
-    this.#input.value = ''
-    this.#render()
-    this.#saveData()
+    const value = this.#input.value
+    if (value.length > 1) {
+      this.#createTaskData(value)
+      this.#input.value = ''
+      this.#render()
+      this.#saveData()
+    }
   }
 
   static #render = () => {
     this.#block.innerHTML = ''
+
     if (this.#list.length === 0) {
-      this.#block.innerText = 'Список задач пустий'
+      this.#block.innerHTML = `Список задач пустий`
     } else {
       this.#list.forEach((taskData) => {
         const el = this.#createTaskElem(taskData)
@@ -68,14 +78,18 @@ export class ToDo {
       })
     }
   }
+
   static #createTaskElem = (data) => {
     const el = this.#template.cloneNode(true)
 
     const [id, text, btnDo, btnCancel] = el.children
 
-    id.innerText = `${data.id}.`
-    text.innerText = data.text
+    id.innerHTML = `${data.id}.`
+
+    text.innerHTML = data.text
+
     btnCancel.onclick = this.#handleCancel(data)
+
     btnDo.onclick = this.#handleDo(data, btnDo, el)
 
     if (data.done) {
@@ -99,7 +113,7 @@ export class ToDo {
     }
   }
 
-  static #toggleDone = (id) => () => {
+  static #toggleDone = (id) => {
     const task = this.#list.find((item) => item.id === id)
 
     if (task) {
@@ -126,6 +140,6 @@ export class ToDo {
   }
 }
 
-ToDo.init()
+Todo.init()
 
-window.todo = ToDo
+window.todo = Todo
